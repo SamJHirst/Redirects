@@ -1,0 +1,98 @@
+<div class="container">
+  <div class="row">
+    <div class="col-sm">
+        <a href="/logout/" class="btn btn-danger float-right" style="margin-left: 5px;">Logout</a>
+        <a href="#!" class="btn btn-success float-right" data-toggle="modal" data-target="#modal-add">Add New</a>
+        <br /><br /><br />
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th scope="col">Key</th>
+                    <th scope="col">Redirect</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Manage</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#each redirects}}
+                    <tr>
+                        <td>
+                            {{key}}
+                        </td>
+                        <td>
+                            {{redirect}}
+                        </td>
+                        <td>
+                            {{#if enabled}}
+                                On
+                            {{else}}
+                                Off
+                            {{/if}}    
+                        </td>
+                        <td>
+                            <a href="{{redirect}}" class="btn btn-secondary" target="_blank" rel="noopener noreferrer nofollow"><i class="fas fa-external-link-square-alt"></i></a>
+                            <a href="#!" class="btn btn-info" data-key="{{key}}" id="edit"><i class="fas fa-edit"></i><a>
+                            <a href="#!" class="btn btn-warning" data-key="{{key }}" style="color: #FFF;" id="toggle"><i class="fas fa-power-off"></i></a>
+                            <a href="#!" class="btn btn-danger" data-key="{{key}}" id="delete"><i class="fas fa-trash-alt"></i></a>
+                        </td>
+                    </tr>
+                {{/each}}
+            </tbody>
+        </table>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modal-add" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Redirect</h5>
+            </div>
+            <div class="modal-body">
+                <label for="basic-url">Key</label>
+                <div class="input-group mb-3">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text" id="basic-addon3">{{base}}</span>
+                    </div>
+                    <input type="text" class="form-control" id="key" aria-describedby="basic-addon3">
+                </div>
+                <label for="basic-url">Redirect</label>
+                <div class="input-group mb-3">
+                    <input type="text" class="form-control" id="redirect">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal" id="close">Close</button>
+                <button type="button" class="btn btn-primary" id="add">Add</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modal-edit" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Existing Redirect</h5>
+            </div>
+            <div class="modal-body">
+                <label for="basic-url">Key</label>
+                <div class="input-group mb-3">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text" id="basic-addon3">{{base}}</span>
+                    </div>
+                    <input type="text" class="form-control" id="edit-key" aria-describedby="basic-addon3" disabled>
+                </div>
+                <label for="basic-url">Redirect</label>
+                <div class="input-group mb-3">
+                    <input type="text" class="form-control" id="edit-redirect">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal" id="cancel">Cancel</button>
+                <button type="button" class="btn btn-primary" id="save">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
