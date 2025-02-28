@@ -60,7 +60,7 @@ app.get('/', async (req: Request, res: Response) => {
 });
 
 app.post("/auth", (req: Request, res: Response) => {
-    if (req.body.username !== process.env.APP_USERNAME || req.body.password !== process.env.APP_PASSWORD) {
+    if (req.body.password !== process.env.PASSWORD) {
         return res.sendStatus(403);
     } 
 

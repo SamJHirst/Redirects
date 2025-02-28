@@ -3,14 +3,12 @@ function login() {
         url: '/auth',
         type: 'POST',
         data: {
-            username: $('#username').val(),
             password: $('#password').val()
         },
         complete: () => {
             location.reload();
         },
         error: () => {
-            $('#username').addClass('is-invalid');
             $('#password').addClass('is-invalid');
         },
     });
@@ -27,6 +25,5 @@ $(document).keypress((e) => {
 });
 
 $(document).delegate('input', 'input', () => {
-    $('#username').removeClass('is-invalid');
     $('#password').removeClass('is-invalid');
 })
