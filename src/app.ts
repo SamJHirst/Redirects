@@ -1,4 +1,4 @@
-import express, { NextFunction, Request, Response } from 'express';
+import express, { Request, Response } from 'express';
 import session from 'express-session';
 import { engine } from 'express-handlebars';
 import bodyParser from 'body-parser';
@@ -41,179 +41,156 @@ declare module 'express-session' {
 }
 
 app.get('/', async (req: Request, res: Response) => {
-    if (req.session.loggedin) {
-        const redirects: IRedirect[] = await Redirect.find().lean();
-        res.render('dashboard', {
-            title: 'Dashboard',
-            css: [],
-            js: [
-                'dashboard.js'
-            ],
-            base: `https://${req.headers.host}/`,
-            redirects: redirects
-        });
-    } else {
-        res.render('login', {
+    if (!req.session.loggedin) {
+        return res.render('login', {
             title: 'Login',
-            css: [
-                'login.css'
-            ],
-            js: [
-                'login.js'
-            ]
+            css: ['login.css'],
+            js: ['login.js'],
         });
     }
-});
 
-app.get('/logout', (req: Request, res: Response) => {
-    req.session.destroy(() => {
-        res.redirect('/');
+    const redirects: IRedirect[] = await Redirect.find().lean();
+    return res.render('dashboard', {
+        title: 'Dashboard',
+        css: [],
+        js: ['dashboard.js'],
+        base: `https://${req.headers.host}/`,
+        redirects: redirects,
     });
 });
 
-app.get("/:key", async (req: Request, res: Response, next: NextFunction) => {
-    const redirect: IRedirect | null = await Redirect.findOne({
-        key: req.params.key
+app.get('/logout', async (req: Request, res: Response) => {
+    req.session.loggedin = false;
+    res.redirect('/');
+});
+
+app.get("/:key", async (req: Request, res: Response) => {
+    const redirect = await Redirect.findOne({
+        key: req.params.key,
     });
-    if (redirect) {
-        if (redirect.enabled) {
-            res.redirect(redirect.redirect);
-        } else {
-            res.render('error', {
-                title: 'Error 423',
-                css: [
-                    'error.css'
-                ],
-                js: [],
-                code: 423,
-                message: 'That Redirect is Disabled'
-            });
-        }
-    } else {
-        next();
+
+    if (!redirect) {
+        return res.render('error', {
+            title: 'Error 404',
+            css: ['error.css'],
+            js: [],
+            code: 404,
+            message: 'Page Not Found'
+        });
     }
-});
 
-app.get('*', (req: Request, res: Response) => {
-    res.render('error', {
-        title: 'Error 404',
-        css: [
-            'error.css'
-        ],
-        js: [],
-        code: 404,
-        message: 'Page Not Found'
-    });
+    if (!redirect.enabled) {
+        return res.render('error', {
+            title: 'Error 423',
+            css: ['error.css'],
+            js: [],
+            code: 423,
+            message: 'That Redirect is Disabled'
+        });
+    }
+
+    return res.redirect(redirect.redirect);
 });
 
 app.post("/login/", (req: Request, res: Response) => {
-    if (req.body.username === process.env.APP_USERNAME && req.body.password === process.env.APP_PASSWORD) {
-        req.session.loggedin = true;
-        res.sendStatus(204);
-    } else {
-        res.sendStatus(403);
-    }
+    if (req.body.username !== process.env.APP_USERNAME || req.body.password !== process.env.APP_PASSWORD) {
+        return res.sendStatus(403);
+    } 
+
+    req.session.loggedin = true;
+    return res.sendStatus(204);
 });
 
 app.post('/add/', async (req: Request, res: Response) => {
-    if (req.session.loggedin) {
-        const r = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/;
+    if (!req.session.loggedin) {
+        return res.sendStatus(401);
+    }
 
-        if (r.test(req.body.redirect)) {
-            const existing: IRedirect | null = await Redirect.findOne({
-                key: req.body.key
-            });
-            if (!existing) {
-                const redirect: IRedirect = new Redirect({
-                    key: req.body.key,
-                    redirect: req.body.redirect,
-                    enabled: true
-                });
-                redirect.save().then(() => {
-                    res.sendStatus(204);
-                }).catch(() => {
-                    res.sendStatus(400);
-                });
-            } else {
-                res.sendStatus(409);
-            }
-        } else {
-            res.sendStatus(400);
-        }
-    } else {
-        res.sendStatus(401);
+    const r = new RegExp(/https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/);
+    if (!r.test(req.body.redirect)) {
+        return res.sendStatus(400);
+    }
+
+    const existing = await Redirect.findOne({key: req.body.key});
+    if (existing) {
+        return res.sendStatus(409);
+    }
+
+    try {
+        const redirect = new Redirect({
+            key: req.body.key,
+            redirect: req.body.redirect,
+            enabled: true
+        });
+        await redirect.save();
+
+        return  res.sendStatus(204);
+    } catch (e) {
+        return res.sendStatus(400);
     }
 });
 
 app.post('/get/', async (req: Request, res: Response) => {
-    if (req.session.loggedin) {
-        const redirect: IRedirect | null = await Redirect.findOne({
-            key: req.body.key
-        });
-        if (redirect) {
-            res.send(redirect);
-        } else {
-            res.sendStatus(404);
-        }
-    } else {
-        res.sendStatus(401);
+    if (!req.session.loggedin) {
+        return res.sendStatus(401);
     }
+
+    const redirect = await Redirect.findOne({key: req.body.key});
+    if (!redirect) {
+        return res.sendStatus(404);
+    }
+
+    return res.send(redirect);
 });
 
 app.post("/edit/", async (req: Request, res: Response) => {
-    if (req.session.loggedin) {
-        const r = new RegExp(/https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/);
-
-        if (r.test(req.body.redirect)) {
-            const redirect: IRedirect | null = await Redirect.findOne({
-                key: req.body.key
-            });
-            if (redirect) {
-                redirect.redirect = req.body.redirect;
-                await redirect.save();
-                res.sendStatus(204);
-            } else {
-                res.sendStatus(404);
-            }
-        } else {
-            res.sendStatus(400);
-        }
-    } else {
-        res.sendStatus(401);
+    if (!req.session.loggedin) {
+        return res.sendStatus(401);
     }
+
+    const r = new RegExp(/https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/);
+    if (!r.test(req.body.redirect)) {
+        return res.sendStatus(400);
+    }
+
+    const redirect = await Redirect.findOne({key: req.body.key});
+    if (!redirect) {
+        return res.sendStatus(404);
+    }
+
+    redirect.redirect = req.body.redirect;
+    await redirect.save();
+    
+    return res.sendStatus(204);
 });
 
 app.post("/toggle/", async (req: Request, res: Response) => {
-    if (req.session.loggedin) {
-        const redirect: IRedirect | null = await Redirect.findOne({
-            key: req.body.key
-        });
-        if (redirect) {
-            redirect.enabled = !redirect.enabled;
-            await redirect.save();
-            res.sendStatus(204);
-        } else {
-            res.sendStatus(404);
-        }
-    } else {
-        res.sendStatus(401);
+    if (!req.session.loggedin) {
+        return res.sendStatus(401);
     }
+
+    const redirect = await Redirect.findOne({key: req.body.key});
+    if (!redirect) {
+        return res.sendStatus(404);
+    }
+
+    redirect.enabled = !redirect.enabled;
+    await redirect.save();
+    
+    return res.sendStatus(204);
 });
 
-app.post('/delete/', (req: Request, res: Response) => {
-    if (req.session.loggedin) {
-        Redirect.deleteOne({
-            key: req.body.key
-        }).then((resp) => {
-            if (resp.deletedCount > 0) {
-                res.sendStatus(204);
-            } else {
-                res.sendStatus(400);
-            }
-        });
-    } else {
-        res.sendStatus(401);
+app.post('/delete/', async (req: Request, res: Response) => {
+    if (!req.session.loggedin) {
+        return res.sendStatus(401);
     }
+
+    const op = await Redirect.deleteOne({key: req.body.key});
+    if (op.deletedCount === 0) {
+        return res.sendStatus(400);
+    }
+    
+    return res.sendStatus(204);
 });
 
 app.listen(process.env.PORT, () => {
