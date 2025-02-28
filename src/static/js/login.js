@@ -1,12 +1,18 @@
 function login() {
-    $.post('/login/', {
-        username: $('#username').val(),
-        password: $('#password').val()
-    }).done(() => {
-        location.reload();
-    }).fail(() => {
-        $('#username').addClass('is-invalid');
-        $('#password').addClass('is-invalid');
+    $.ajax({
+        url: '/auth',
+        type: 'POST',
+        data: {
+            username: $('#username').val(),
+            password: $('#password').val()
+        },
+        complete: () => {
+            location.reload();
+        },
+        error: () => {
+            $('#username').addClass('is-invalid');
+            $('#password').addClass('is-invalid');
+        },
     });
 }
 

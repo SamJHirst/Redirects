@@ -59,9 +59,18 @@ app.get('/', async (req: Request, res: Response) => {
     });
 });
 
-app.get('/logout', async (req: Request, res: Response) => {
+app.post("/auth", (req: Request, res: Response) => {
+    if (req.body.username !== process.env.APP_USERNAME || req.body.password !== process.env.APP_PASSWORD) {
+        return res.sendStatus(403);
+    } 
+
+    req.session.loggedin = true;
+    return res.sendStatus(204);
+});
+
+app.delete('/auth', async (req: Request, res: Response) => {
     req.session.loggedin = false;
-    res.redirect('/');
+    return res.sendStatus(204);
 });
 
 app.get("/:key", async (req: Request, res: Response) => {
@@ -92,16 +101,9 @@ app.get("/:key", async (req: Request, res: Response) => {
     return res.redirect(redirect.redirect);
 });
 
-app.post("/login/", (req: Request, res: Response) => {
-    if (req.body.username !== process.env.APP_USERNAME || req.body.password !== process.env.APP_PASSWORD) {
-        return res.sendStatus(403);
-    } 
+app.post('/:key', async (req: Request, res: Response) => {
+    console.log(req.params, req.body);
 
-    req.session.loggedin = true;
-    return res.sendStatus(204);
-});
-
-app.post('/add/', async (req: Request, res: Response) => {
     if (!req.session.loggedin) {
         return res.sendStatus(401);
     }
@@ -111,14 +113,14 @@ app.post('/add/', async (req: Request, res: Response) => {
         return res.sendStatus(400);
     }
 
-    const existing = await Redirect.findOne({key: req.body.key});
+    const existing = await Redirect.findOne({key: req.params.key});
     if (existing) {
         return res.sendStatus(409);
     }
 
     try {
         const redirect = new Redirect({
-            key: req.body.key,
+            key: req.params.key,
             redirect: req.body.redirect,
             enabled: true
         });
@@ -130,12 +132,12 @@ app.post('/add/', async (req: Request, res: Response) => {
     }
 });
 
-app.post('/get/', async (req: Request, res: Response) => {
+app.get('/:key/json', async (req: Request, res: Response) => {
     if (!req.session.loggedin) {
         return res.sendStatus(401);
     }
 
-    const redirect = await Redirect.findOne({key: req.body.key});
+    const redirect = await Redirect.findOne({key: req.params.key});
     if (!redirect) {
         return res.sendStatus(404);
     }
@@ -143,7 +145,7 @@ app.post('/get/', async (req: Request, res: Response) => {
     return res.send(redirect);
 });
 
-app.post("/edit/", async (req: Request, res: Response) => {
+app.patch("/:key/redirect", async (req: Request, res: Response) => {
     if (!req.session.loggedin) {
         return res.sendStatus(401);
     }
@@ -153,7 +155,7 @@ app.post("/edit/", async (req: Request, res: Response) => {
         return res.sendStatus(400);
     }
 
-    const redirect = await Redirect.findOne({key: req.body.key});
+    const redirect = await Redirect.findOne({key: req.params.key});
     if (!redirect) {
         return res.sendStatus(404);
     }
@@ -164,12 +166,12 @@ app.post("/edit/", async (req: Request, res: Response) => {
     return res.sendStatus(204);
 });
 
-app.post("/toggle/", async (req: Request, res: Response) => {
+app.patch("/:key/enabled", async (req: Request, res: Response) => {
     if (!req.session.loggedin) {
         return res.sendStatus(401);
     }
 
-    const redirect = await Redirect.findOne({key: req.body.key});
+    const redirect = await Redirect.findOne({key: req.params.key});
     if (!redirect) {
         return res.sendStatus(404);
     }
@@ -180,12 +182,12 @@ app.post("/toggle/", async (req: Request, res: Response) => {
     return res.sendStatus(204);
 });
 
-app.post('/delete/', async (req: Request, res: Response) => {
+app.delete('/:key', async (req: Request, res: Response) => {
     if (!req.session.loggedin) {
         return res.sendStatus(401);
     }
 
-    const op = await Redirect.deleteOne({key: req.body.key});
+    const op = await Redirect.deleteOne({key: req.params.key});
     if (op.deletedCount === 0) {
         return res.sendStatus(400);
     }
