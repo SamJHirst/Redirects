@@ -6,3 +6,6 @@ dist
 
 # environment variables
 .env
+
+# mongodb docker container data
+mongodb-volume
