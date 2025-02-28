@@ -5,7 +5,7 @@ function login() {
         data: {
             password: $('#password').val()
         },
-        complete: () => {
+        success: () => {
             location.reload();
         },
         error: () => {

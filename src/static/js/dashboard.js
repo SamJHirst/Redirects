@@ -2,7 +2,7 @@ $(document).delegate('#logout', 'click', function() {
     $.ajax({
         url: '/auth',
         type: 'DELETE',
-        complete: () => {
+        success: () => {
             location.reload();
         },
     });
@@ -19,7 +19,7 @@ $(document).delegate('#add', 'click', () => {
             data: {
                 redirect,
             },
-            complete: () => {
+            success: () => {
                 location.reload();
             },
             error: () => {
@@ -39,7 +39,7 @@ $(document).delegate('#edit', 'click', function() {
     $.ajax({
         url: `/${key}/json`,
         type: 'GET',
-        complete: (resp) => {
+        success: (resp) => {
             $('#edit-key').val(resp.responseJSON.key),
             $('#edit-redirect').val(resp.responseJSON.redirect);
             $('#modal-edit').modal('show');
@@ -58,7 +58,7 @@ $(document).delegate('#save', 'click', () => {
             data: {
                 redirect,
             },
-            complete: () => {
+            success: () => {
                 location.reload();
             },
             error: () => {
@@ -76,7 +76,7 @@ $(document).delegate('#toggle', 'click', function() {
     $.ajax({
         url: `/${key}/enabled`,
         type: 'PATCH',
-        complete: () => {
+        success: () => {
             location.reload();
         },
     });
@@ -88,7 +88,7 @@ $(document).delegate('#delete', 'click', function() {
     $.ajax({
         url: `/${key}`,
         type: 'DELETE',
-        complete: () => {
+        success: () => {
             location.reload();
         },
     });
